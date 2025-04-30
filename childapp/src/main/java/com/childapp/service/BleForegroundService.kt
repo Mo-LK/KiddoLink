@@ -19,7 +19,6 @@ class BleForegroundService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // Start BLE operations here if needed
         return START_STICKY
     }
 
