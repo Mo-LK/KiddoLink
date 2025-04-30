@@ -7,6 +7,14 @@
       </SelectionState>
       <SelectionState runConfigName="childapp">
         <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-04-30T11:36:04.392326Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=R3CM402T9YV" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="educatorapp">
         <option name="selectionMode" value="DROPDOWN" />

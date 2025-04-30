@@ -63,7 +63,6 @@ class ChildMainActivity : ComponentActivity() {
             }
         }
 
-        // Safe to run here (outside Composables)
         if (prefs.hasId() && hasAllPermissions()) {
             startBleServiceAndOperations(prefs.getId()!!)
         } else if (prefs.hasId()) {
