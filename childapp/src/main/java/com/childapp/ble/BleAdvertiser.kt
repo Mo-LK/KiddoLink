@@ -11,14 +11,12 @@ import android.os.ParcelUuid
 import android.util.Log
 import java.nio.charset.Charset
 import java.util.*
-import kotlin.concurrent.fixedRateTimer
 
 class BleAdvertiser(
     private val context: Context,
     private val myId: String
 ) {
     private var advertiser: BluetoothLeAdvertiser? = null
-    private var advertisingTimer: Timer? = null
 
     fun startAdvertising() {
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -30,25 +28,7 @@ class BleAdvertiser(
 
         advertiser = adapter.bluetoothLeAdvertiser
 
-        advertisingTimer = fixedRateTimer("ble-advertise-timer", initialDelay = 0, period = 2000) {
-            advertiseOnce()
-        }
-    }
-
-    fun stopAdvertising() {
-        try {
-            advertiser?.stopAdvertising(advertiseCallback)
-            advertisingTimer?.cancel()
-            Log.d("BLE_ADVERTISER", "Stopped advertising")
-        } catch (e: SecurityException) {
-            Log.e("BLE_ADVERTISER", "Permission denied to stop advertising: ${e.message}")
-        } catch (e: Exception) {
-            Log.e("BLE_ADVERTISER", "Unexpected error while stopping advertising: ${e.message}")
-        }
-    }
-
-    private fun advertiseOnce() {
-        val payload = myId // Exemple: "C-A"
+        val payload = myId
 
         val data = AdvertiseData.Builder()
             .addServiceUuid(ParcelUuid(SERVICE_UUID))
@@ -66,9 +46,21 @@ class BleAdvertiser(
             Log.d("BLE_ADVERTISER", "Advertised: $payload")
         } catch (e: SecurityException) {
             Log.e("BLE_ADVERTISER", "Permission denied for BLE advertising: ${e.message}")
+        } catch (e: Exception) {
+            Log.e("BLE_ADVERTISER", "Unexpected error: ${e.message}")
         }
     }
 
+    fun stopAdvertising() {
+        try {
+            advertiser?.stopAdvertising(advertiseCallback)
+            Log.d("BLE_ADVERTISER", "Stopped advertising")
+        } catch (e: SecurityException) {
+            Log.e("BLE_ADVERTISER", "Permission denied to stop advertising: ${e.message}")
+        } catch (e: Exception) {
+            Log.e("BLE_ADVERTISER", "Unexpected error while stopping advertising: ${e.message}")
+        }
+    }
 
     private val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {

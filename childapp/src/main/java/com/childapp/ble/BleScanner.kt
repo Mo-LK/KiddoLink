@@ -22,21 +22,51 @@ class BleScanner(private val context: Context) {
 
     var lastDetectedDevices = mutableListOf<DetectedDevice>()
 
+    private val stableDistances = mutableMapOf<String, Double>()
+    private val suspectCounters = mutableMapOf<String, Int>()
+    private val MAX_SUSPECT_BEFORE_ACCEPT = 2
+    private val DISTANCE_VARIATION_THRESHOLD = 0.5  // 50%
+
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            result.device?.name?.let { deviceName ->
-                val rssi = result.rssi
-                val distance = DistanceEstimator.estimateDistance(rssi)
+            val scanRecord = result.scanRecord ?: return
+            val serviceData = scanRecord.getServiceData(ParcelUuid(BleAdvertiser.SERVICE_UUID))
+            val id = serviceData?.toString(Charsets.UTF_8) ?: return
 
-                val detectedDevice = DetectedDevice(
-                    deviceId = deviceName,
-                    estimatedDistance = distance
-                )
+            if (!id.startsWith("C-") && id != "EDU") return
 
-                lastDetectedDevices.add(detectedDevice)
+            val newDistance = DistanceEstimator.estimateDistance(result.rssi)
 
-                Log.d("BLE_SCAN", "Detected ${deviceName} at ~${"%.2f".format(distance)} meters")
+            val stable = stableDistances[id]
+            if (stable == null) {
+                stableDistances[id] = newDistance
+                suspectCounters[id] = 0
+                addDevice(id, newDistance)
+                return
             }
+
+            val variation = kotlin.math.abs(newDistance - stable) / stable
+            if (variation > DISTANCE_VARIATION_THRESHOLD) {
+                val count = suspectCounters.getOrDefault(id, 0) + 1
+                if (count >= MAX_SUSPECT_BEFORE_ACCEPT) {
+                    stableDistances[id] = newDistance
+                    suspectCounters[id] = 0
+                    addDevice(id, newDistance)
+                } else {
+                    suspectCounters[id] = count
+                    Log.d("BLE_FILTER", "Ignoring suspect distance for $id: $newDistance (count=$count)")
+                }
+            } else {
+                stableDistances[id] = newDistance
+                suspectCounters[id] = 0
+                addDevice(id, newDistance)
+            }
+        }
+
+        private fun addDevice(id: String, distance: Double) {
+            val detectedDevice = DetectedDevice(deviceId = id, estimatedDistance = distance)
+            lastDetectedDevices.add(detectedDevice)
+            Log.d("BLE_SCAN", "Detected $id at ~${"%.2f".format(distance)} meters")
         }
 
         override fun onScanFailed(errorCode: Int) {

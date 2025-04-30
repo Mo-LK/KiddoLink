@@ -1,6 +1,7 @@
 package com.childapp
 
 import android.Manifest
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
@@ -18,7 +19,7 @@ import com.childapp.ui.IdSetupScreen
 import com.childapp.ui.MainScreen
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-
+import com.childapp.service.BleForegroundService
 
 
 class ChildMainActivity : ComponentActivity() {
@@ -39,6 +40,8 @@ class ChildMainActivity : ComponentActivity() {
         ) { permissions ->
             val allGranted = permissions.entries.all { it.value }
             if (allGranted && prefs.hasId()) {
+                val intent = Intent(this, BleForegroundService::class.java)
+                startForegroundService(intent)
                 startBleOperations(prefs.getId()!!)
             } else {
                 Log.e("PERMISSIONS", "Permissions or ID missing")
