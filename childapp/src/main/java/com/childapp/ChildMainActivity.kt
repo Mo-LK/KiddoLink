@@ -20,7 +20,8 @@ import com.childapp.ui.MainScreen
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import com.childapp.service.BleForegroundService
-
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 
 class ChildMainActivity : ComponentActivity() {
 
@@ -40,9 +41,7 @@ class ChildMainActivity : ComponentActivity() {
         ) { permissions ->
             val allGranted = permissions.entries.all { it.value }
             if (allGranted && prefs.hasId()) {
-                val intent = Intent(this, BleForegroundService::class.java)
-                startForegroundService(intent)
-                startBleOperations(prefs.getId()!!)
+                startBleServiceAndOperations(prefs.getId()!!)
             } else {
                 Log.e("PERMISSIONS", "Permissions or ID missing")
             }
@@ -63,6 +62,13 @@ class ChildMainActivity : ComponentActivity() {
                 }
             }
         }
+
+        // Safe to run here (outside Composables)
+        if (prefs.hasId() && hasAllPermissions()) {
+            startBleServiceAndOperations(prefs.getId()!!)
+        } else if (prefs.hasId()) {
+            requestPermissions()
+        }
     }
 
     private fun requestPermissions() {
@@ -75,6 +81,25 @@ class ChildMainActivity : ComponentActivity() {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
         )
+    }
+
+    private fun hasAllPermissions(): Boolean {
+        val permissions = listOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.BLUETOOTH_ADVERTISE,
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        )
+        return permissions.all {
+            ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun startBleServiceAndOperations(myId: String) {
+        val intent = Intent(this, BleForegroundService::class.java)
+        startForegroundService(intent)
+        startBleOperations(myId)
     }
 
     private fun startBleOperations(myId: String) {
