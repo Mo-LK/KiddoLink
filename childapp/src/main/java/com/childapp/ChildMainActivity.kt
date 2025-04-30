@@ -17,8 +17,6 @@ import com.childapp.storage.PreferencesManager
 import com.childapp.ui.theme.KiddoLinkTheme
 import com.childapp.ui.IdSetupScreen
 import com.childapp.ui.MainScreen
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import com.childapp.service.BleForegroundService
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
