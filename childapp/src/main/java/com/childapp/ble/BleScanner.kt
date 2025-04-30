@@ -1,7 +1,5 @@
 package com.childapp.ble
 
-package com.childapp.ble
-
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
