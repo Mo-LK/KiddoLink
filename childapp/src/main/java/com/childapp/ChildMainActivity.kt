@@ -20,6 +20,8 @@ import com.childapp.ui.MainScreen
 import com.childapp.service.BleForegroundService
 import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
+import com.google.firebase.firestore.FirebaseFirestore
+
 
 class ChildMainActivity : ComponentActivity() {
 
@@ -41,7 +43,7 @@ class ChildMainActivity : ComponentActivity() {
             if (allGranted && prefs.hasId()) {
                 startBleServiceAndOperations(prefs.getId()!!)
             } else {
-                Log.e("PERMISSIONS", "Permissions or ID missing")
+                Log.e("PERMISSIONS", "Permissions denied or ID missing")
             }
         }
 
@@ -53,7 +55,12 @@ class ChildMainActivity : ComponentActivity() {
                     IdSetupScreen(onIdSet = { id ->
                         prefs.saveId(id)
                         deviceIdState.value = id
-                        requestPermissions()
+
+                        if (hasAllPermissions()) {
+                            startBleServiceAndOperations(id)
+                        } else {
+                            requestPermissions()
+                        }
                     })
                 } else {
                     MainScreen(deviceIdState.value!!)
@@ -61,12 +68,27 @@ class ChildMainActivity : ComponentActivity() {
             }
         }
 
+        val db = FirebaseFirestore.getInstance()
+        val testData = hashMapOf(
+            "testField" to "Hello Firebase!",
+            "timestamp" to System.currentTimeMillis()
+        )
+        db.collection("test_write")
+            .add(testData)
+            .addOnSuccessListener { documentRef ->
+                Log.d("FIREBASE_TEST", "Écriture réussie : ${documentRef.id}")
+            }
+            .addOnFailureListener { e ->
+                Log.e("FIREBASE_TEST", "Échec d'écriture", e)
+            }
+
         if (prefs.hasId() && hasAllPermissions()) {
             startBleServiceAndOperations(prefs.getId()!!)
         } else if (prefs.hasId()) {
             requestPermissions()
         }
     }
+
 
     private fun requestPermissions() {
         permissionLauncher.launch(
