@@ -8,18 +8,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.educatorapp.ble.BleScanner
 import com.educatorapp.service.BleForegroundService
 import com.educatorapp.ui.NearbyChildrenScreen
 import com.educatorapp.ui.theme.KiddoLinkTheme
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.*
 
 class EducatorMainActivity : ComponentActivity() {
 
@@ -74,17 +76,35 @@ class EducatorMainActivity : ComponentActivity() {
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     val scanner = scannerState.value
-                    if (permissionsGranted && scanner != null) {
-                        NearbyChildrenScreen(
-                            scanner = scanner,
-                            reports = firestoreReports,
-                            modifier = Modifier.padding(innerPadding)
-                        )
-                    } else {
-                        Text(
-                            text = "Waiting for permissions",
-                            modifier = Modifier.padding(innerPadding)
-                        )
+
+                    Column(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .padding(16.dp)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        if (permissionsGranted && scanner != null) {
+                            NearbyChildrenScreen(
+                                scanner = scanner,
+                                reports = firestoreReports
+                            )
+                        } else {
+                            Text(
+                                "Waiting for permissions",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Button(
+                            onClick = { writeTestDataFromTenToEleven() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Insert 10–11 AM Test Data")
+                        }
                     }
                 }
             }
@@ -99,6 +119,34 @@ class EducatorMainActivity : ComponentActivity() {
     private fun hasAllPermissions(permissions: Array<String>): Boolean {
         return permissions.all {
             ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun writeTestDataFromTenToEleven() {
+        val db = FirebaseFirestore.getInstance()
+        val children = listOf("C-A", "C-B", "C-C")
+        val start = 10 * 60
+        val end = 11 * 60
+        val delayBetweenWrites = 100L
+
+        CoroutineScope(Dispatchers.IO).launch {
+            for (minute in start..end step 5) {
+                val time = "%02d:%02d".format(minute / 60, minute % 60)
+                for (child in children) {
+                    val isAlone = (0..100).random() < 30
+                    val nearbyIds = if (isAlone) emptyList<String>() else children.filter { it != child }.shuffled().take((1..2).random())
+
+                    val doc = mapOf(
+                        "deviceId" to child,
+                        "time" to time,
+                        "isAlone" to isAlone,
+                        "nearbyIds" to nearbyIds
+                    )
+
+                    db.collection("presence_reports").add(doc)
+                    delay(delayBetweenWrites)
+                }
+            }
         }
     }
 }

@@ -2,10 +2,11 @@ package com.educatorapp.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.educatorapp.ble.BleScanner
+import com.educatorapp.models.PresenceReport
 
 @Composable
 fun NearbyChildrenScreen(
@@ -13,13 +14,16 @@ fun NearbyChildrenScreen(
     reports: List<Map<String, Any>>,
     modifier: Modifier = Modifier
 ) {
-    LaunchedEffect(Unit) {
-        scanner.startScanning()
-    }
-
     val devices = scanner.lastDetectedDevices
         .distinctBy { it.deviceId }
         .sortedBy { it.estimatedDistance }
+
+    val presenceReports = reports.mapNotNull { report ->
+        val id = report["deviceId"] as? String ?: return@mapNotNull null
+        val time = report["time"] as? String ?: return@mapNotNull null
+        val isAlone = report["isAlone"] as? Boolean ?: false
+        PresenceReport(id, time, isAlone)
+    }
 
     Column(
         modifier = modifier
@@ -41,12 +45,21 @@ fun NearbyChildrenScreen(
         Divider()
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Latest Presence Reports", style = MaterialTheme.typography.headlineSmall)
+        Text("Presence Timeline", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        ChildPresenceTimeline(reports = presenceReports)
+
+        Spacer(modifier = Modifier.height(32.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Raw Data Preview (latest 3)", style = MaterialTheme.typography.headlineSmall)
         Spacer(modifier = Modifier.height(16.dp))
 
         reports
-            .sortedBy { it["time"] as? String ?: "" }
-            .take(10)
+            .sortedByDescending { it["time"] as? String ?: "" }
+            .take(3)
             .forEach { report ->
                 val id = report["deviceId"] as? String ?: "Unknown"
                 val alone = report["isAlone"] as? Boolean ?: false

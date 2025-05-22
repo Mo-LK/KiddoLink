@@ -1,6 +1,5 @@
 package com.childapp.ble
 
-import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseData
