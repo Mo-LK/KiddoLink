@@ -19,6 +19,7 @@ import com.educatorapp.ble.BleScanner
 import com.educatorapp.service.BleForegroundService
 import com.educatorapp.ui.NearbyChildrenScreen
 import com.educatorapp.ui.theme.KiddoLinkTheme
+import com.google.firebase.firestore.FirebaseFirestore
 
 class EducatorMainActivity : ComponentActivity() {
 
@@ -51,6 +52,7 @@ class EducatorMainActivity : ComponentActivity() {
         setContent {
             KiddoLinkTheme {
                 val scannerState = remember { mutableStateOf<BleScanner?>(null) }
+                val firestoreReports = remember { mutableStateListOf<Map<String, Any>>() }
 
                 LaunchedEffect(permissionsGranted) {
                     if (permissionsGranted && scannerState.value == null) {
@@ -58,6 +60,15 @@ class EducatorMainActivity : ComponentActivity() {
                         scannerState.value = BleScanner(this@EducatorMainActivity).also {
                             it.startScanning()
                         }
+
+                        FirebaseFirestore.getInstance()
+                            .collection("presence_reports")
+                            .addSnapshotListener { snapshot, _ ->
+                                snapshot?.documents?.let { docs ->
+                                    firestoreReports.clear()
+                                    firestoreReports.addAll(docs.mapNotNull { it.data })
+                                }
+                            }
                     }
                 }
 
@@ -66,11 +77,12 @@ class EducatorMainActivity : ComponentActivity() {
                     if (permissionsGranted && scanner != null) {
                         NearbyChildrenScreen(
                             scanner = scanner,
+                            reports = firestoreReports,
                             modifier = Modifier.padding(innerPadding)
                         )
                     } else {
                         Text(
-                            text = "Waiting for permissions...",
+                            text = "Waiting for permissions",
                             modifier = Modifier.padding(innerPadding)
                         )
                     }

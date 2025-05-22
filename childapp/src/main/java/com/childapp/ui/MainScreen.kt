@@ -7,7 +7,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun MainScreen(deviceId: String) {
+fun MainScreen(
+    deviceId: String,
+    onScan: () -> Unit,
+    nearbyDevices: List<String>
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -16,5 +20,16 @@ fun MainScreen(deviceId: String) {
         Text(text = "Device ID: $deviceId", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(16.dp))
         Text(text = "BLE Scanning & Advertising Active...", style = MaterialTheme.typography.bodyMedium)
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Button(onClick = onScan) {
+            Text("Scan Nearby Devices")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Nearby Devices:")
+        nearbyDevices.forEach { deviceInfo ->
+            Text(text = deviceInfo, style = MaterialTheme.typography.bodySmall)
+        }
     }
 }

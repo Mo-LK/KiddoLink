@@ -25,7 +25,7 @@ class BleScanner(private val context: Context) {
     private val stableDistances = mutableMapOf<String, Double>()
     private val suspectCounters = mutableMapOf<String, Int>()
     private val MAX_SUSPECT_BEFORE_ACCEPT = 2
-    private val DISTANCE_VARIATION_THRESHOLD = 0.5  // 50%
+    private val DISTANCE_VARIATION_THRESHOLD = 0.5
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
@@ -88,5 +88,12 @@ class BleScanner(private val context: Context) {
     fun stopScanning() {
         scanner?.stopScan(scanCallback)
         Log.d("BLE_SCAN", "Stopped BLE scanning")
+    }
+
+    fun getNearbyDeviceIds(maxDistanceMeters: Double): List<String> {
+        return lastDetectedDevices
+            .filter { it.estimatedDistance <= maxDistanceMeters }
+            .map { it.deviceId }
+            .distinct()
     }
 }
