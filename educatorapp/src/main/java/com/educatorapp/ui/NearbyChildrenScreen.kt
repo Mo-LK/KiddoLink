@@ -12,6 +12,9 @@ import com.educatorapp.models.PresenceReport
 fun NearbyChildrenScreen(
     scanner: BleScanner,
     reports: List<Map<String, Any>>,
+    onTriggerToggle: (String) -> Unit,
+    isRecordingMap: Map<String, Boolean>,
+    uploadCompleteMap: Map<String, Boolean>,
     modifier: Modifier = Modifier
 ) {
     val devices = scanner.lastDetectedDevices
@@ -70,5 +73,31 @@ fun NearbyChildrenScreen(
                 Text("  Alone: $alone | Nearby: $nearby", style = MaterialTheme.typography.bodySmall)
                 Spacer(modifier = Modifier.height(12.dp))
             }
+
+        Spacer(modifier = Modifier.height(32.dp))
+        Divider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Trigger Motion Recording", style = MaterialTheme.typography.headlineSmall)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        devices.forEach { device ->
+            val isRecording = isRecordingMap[device.deviceId] == true
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Button(
+                    onClick = { onTriggerToggle(device.deviceId) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(if (isRecording) "Stop ${device.deviceId}" else "Trigger ${device.deviceId}")
+                }
+
+            }
+        }
     }
 }

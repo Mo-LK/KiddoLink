@@ -21,7 +21,6 @@ class BleAdvertiser(
         val bluetoothManager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val adapter = bluetoothManager.adapter
         if (!adapter.isEnabled || !adapter.isMultipleAdvertisementSupported) {
-            Log.e("BLE_ADVERTISER", "Bluetooth not supported or not enabled")
             return
         }
 
@@ -42,7 +41,6 @@ class BleAdvertiser(
 
         try {
             advertiser?.startAdvertising(settings, data, advertiseCallback)
-            Log.d("BLE_ADVERTISER", "Advertised: $payload")
         } catch (e: SecurityException) {
             Log.e("BLE_ADVERTISER", "Permission denied for BLE advertising: ${e.message}")
         } catch (e: Exception) {

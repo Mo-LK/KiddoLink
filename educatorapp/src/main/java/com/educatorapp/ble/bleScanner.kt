@@ -95,9 +95,4 @@ class BleScanner(private val context: Context) {
         scanner?.startScan(filters, settings, scanCallback)
         Log.d("BLE_SCAN", "Started BLE scanning")
     }
-
-    fun stopScanning() {
-        scanner?.stopScan(scanCallback)
-        Log.d("BLE_SCAN", "Stopped BLE scanning")
-    }
 }

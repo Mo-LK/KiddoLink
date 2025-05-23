@@ -21,6 +21,7 @@ import com.educatorapp.service.BleForegroundService
 import com.educatorapp.ui.NearbyChildrenScreen
 import com.educatorapp.ui.theme.KiddoLinkTheme
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import kotlinx.coroutines.*
 
 class EducatorMainActivity : ComponentActivity() {
@@ -55,6 +56,8 @@ class EducatorMainActivity : ComponentActivity() {
             KiddoLinkTheme {
                 val scannerState = remember { mutableStateOf<BleScanner?>(null) }
                 val firestoreReports = remember { mutableStateListOf<Map<String, Any>>() }
+                val recordingState = remember { mutableStateMapOf<String, Boolean>() }
+                val uploadCompleteMap = remember { mutableStateMapOf<String, Boolean>() }
 
                 LaunchedEffect(permissionsGranted) {
                     if (permissionsGranted && scannerState.value == null) {
@@ -69,6 +72,16 @@ class EducatorMainActivity : ComponentActivity() {
                                 snapshot?.documents?.let { docs ->
                                     firestoreReports.clear()
                                     firestoreReports.addAll(docs.mapNotNull { it.data })
+                                }
+                            }
+
+                        FirebaseFirestore.getInstance()
+                            .collection("triggers")
+                            .addSnapshotListener { snapshot, _ ->
+                                snapshot?.documents?.forEach { doc ->
+                                    val deviceId = doc.id
+                                    val uploadComplete = doc.getBoolean("upload_complete") ?: false
+                                    uploadCompleteMap[deviceId] = uploadComplete
                                 }
                             }
                     }
@@ -87,14 +100,38 @@ class EducatorMainActivity : ComponentActivity() {
                         if (permissionsGranted && scanner != null) {
                             NearbyChildrenScreen(
                                 scanner = scanner,
-                                reports = firestoreReports
+                                reports = firestoreReports,
+                                onTriggerToggle = { deviceId ->
+                                    val db = FirebaseFirestore.getInstance()
+                                    val ref = db.collection("triggers").document(deviceId)
+                                    val isRecording = recordingState[deviceId] == true
+                                    recordingState[deviceId] = !isRecording
+
+                                    if (!isRecording) {
+                                        ref.set(
+                                            mapOf(
+                                                "motion_triggered" to true,
+                                                "upload_complete" to false,
+                                                "motion_stop" to false,
+                                                "recording" to false,
+                                                "stopped" to false
+                                            ),
+                                            SetOptions.merge()
+                                        )
+                                    } else {
+                                        ref.set(
+                                            mapOf(
+                                                "motion_stop" to true
+                                            ),
+                                            SetOptions.merge()
+                                        )
+                                    }
+                                },
+                                isRecordingMap = recordingState,
+                                uploadCompleteMap = uploadCompleteMap
                             )
                         } else {
-                            Text(
-                                "Waiting for permissions",
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                            )
+                            Text("Waiting for permissions", modifier = Modifier.fillMaxWidth())
                         }
 
                         Spacer(modifier = Modifier.height(32.dp))
